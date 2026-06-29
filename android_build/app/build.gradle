@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
 }
+apply plugin: 'com.chaquo.python'
 
 android {
     namespace 'com.duke2.scraper'
@@ -45,5 +46,18 @@ configurations {
     all {
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+    }
+}
+
+chaquopy {
+    python {
+        // Chaquopy will download and embed Python and the specified pip packages
+        pip {
+            install "requests"
+            install "beautifulsoup4"
+            install "curl-cffi"
+            install "cloudscraper"
+            install "Pillow"
+        }
     }
 }

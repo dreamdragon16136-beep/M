@@ -6,6 +6,11 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import com.chaquo.python.PyObject;
+import com.chaquo.python.Python;
+import com.chaquo.python.android.AndroidPlatform;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -25,6 +30,9 @@ public class MainActivity extends Activity {
     private static final int REQUEST_STORAGE = 100;
     private EditText etUrl;
     private Spinner spinnerMediaType;
+    private EditText etMaxItems;
+    private EditText etMaxDepth;
+    private EditText etMaxPages;
     private TextView tvStatus;
 
     @Override
@@ -73,6 +81,39 @@ public class MainActivity extends Activity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerMediaType.setAdapter(adapter);
         layout.addView(spinnerMediaType);
+
+        TextView tvMaxItems = new TextView(this);
+        tvMaxItems.setText("Max items per type (0 = unlimited)");
+        tvMaxItems.setTextColor(0xFFE0E0E0);
+        layout.addView(tvMaxItems);
+
+        etMaxItems = new EditText(this);
+        etMaxItems.setHint("0");
+        etMaxItems.setTextColor(0xFFE0E0E0);
+        etMaxItems.setHintTextColor(0xFF888888);
+        layout.addView(etMaxItems);
+
+        TextView tvDepth = new TextView(this);
+        tvDepth.setText("Crawl depth");
+        tvDepth.setTextColor(0xFFE0E0E0);
+        layout.addView(tvDepth);
+
+        etMaxDepth = new EditText(this);
+        etMaxDepth.setHint("2");
+        etMaxDepth.setTextColor(0xFFE0E0E0);
+        etMaxDepth.setHintTextColor(0xFF888888);
+        layout.addView(etMaxDepth);
+
+        TextView tvPages = new TextView(this);
+        tvPages.setText("Max pages to crawl");
+        tvPages.setTextColor(0xFFE0E0E0);
+        layout.addView(tvPages);
+
+        etMaxPages = new EditText(this);
+        etMaxPages.setHint("1");
+        etMaxPages.setTextColor(0xFFE0E0E0);
+        etMaxPages.setHintTextColor(0xFF888888);
+        layout.addView(etMaxPages);
 
         Button btnStart = new Button(this);
         btnStart.setText("▶️ Start Download");
@@ -131,24 +172,37 @@ public class MainActivity extends Activity {
         }
 
         String mediaType = spinnerMediaType.getSelectedItem().toString();
-        tvStatus.setText("Preparing download for " + mediaType + "...");
+        int maxItems = 0;
+        int maxDepth = 2;
+        int maxPages = 1;
+        try { maxItems = Integer.parseInt(etMaxItems.getText().toString().trim()); } catch (Exception ignored) {}
+        try { maxDepth = Integer.parseInt(etMaxDepth.getText().toString().trim()); } catch (Exception ignored) {}
+        try { maxPages = Integer.parseInt(etMaxPages.getText().toString().trim()); } catch (Exception ignored) {}
 
-        File targetDir = new File(Environment.getExternalStorageDirectory(), "Download/Duke2");
-        targetDir.mkdirs();
-        File scriptFile = new File(targetDir, "Duke2_Enhanced.py");
+        tvStatus.setText("Starting embedded scraper...");
 
-        try {
-            copyAsset("Duke2_Enhanced.py", scriptFile);
-            Toast.makeText(this, "Starting scraper in Termux...", Toast.LENGTH_LONG).show();
-
-            Intent intent = new Intent();
-            intent.setClassName("com.termux", "com.termux.app.TermuxActivity");
-            intent.putExtra("com.termux.RUN_COMMAND", "python \"" + scriptFile.getAbsolutePath() + "\" --url \"" + url + "\" --media-type \"" + mediaType + "\"");
-            startActivity(intent);
-        } catch (Exception e) {
-            tvStatus.setText("Error: " + e.getMessage());
-            showTermuxDialog();
+        // Initialize Chaquopy Python runtime if needed
+        if (!Python.isStarted()) {
+            Python.start(new AndroidPlatform(this));
         }
+
+        final String fUrl = url;
+        final String fMedia = mediaType;
+        final int fMaxItems = maxItems;
+        final int fMaxDepth = maxDepth;
+        final int fMaxPages = maxPages;
+
+        new Thread(() -> {
+            try {
+                Python py = Python.getInstance();
+                PyObject module = py.getModule("duke_wrapper");
+                PyObject result = module.callAttr("run_from_android", fUrl, fMedia, fMaxItems, fMaxDepth, fMaxPages);
+                String out = result.toString();
+                new Handler(Looper.getMainLooper()).post(() -> tvStatus.setText("Scraper finished: " + out));
+            } catch (Exception e) {
+                new Handler(Looper.getMainLooper()).post(() -> tvStatus.setText("Error: " + e.getMessage()));
+            }
+        }).start();
     }
 
     private void copyAsset(String assetName, File outFile) throws Exception {
