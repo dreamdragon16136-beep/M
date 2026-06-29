@@ -15,6 +15,7 @@ import hashlib
 import threading
 import subprocess
 import base64
+import argparse
 from urllib.parse import urljoin, urlparse, unquote
 from queue import Queue
 
@@ -979,44 +980,49 @@ def main():
     • Session cookie persistence
     """)
 
-    if '--gui' in sys.argv:
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--url', default='')
+    parser.add_argument('--media-type', default='')
+    parser.add_argument('--gui', action='store_true')
+    args, remaining = parser.parse_known_args()
+
+    if args.gui:
         if not KIVY_AVAILABLE:
             print("[!] Kivy is required for GUI mode. Install it with: pip install kivy")
             return
         Duke2GUIApp().run()
         return
     
-    # URL input
-    url = input("🔗 Enter starting URL: ").strip()
+    if args.url:
+        url = args.url.strip()
+    else:
+        url = input("🔗 Enter starting URL: ").strip()
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
     
-    # Media type selection
-    print("\n🎯 Choose media types (comma separated):")
-    print("1. Images\n2. Videos\n3. Audio\n4. Documents\n5. Archives\n6. eBooks\n7. All")
-    choice = input("➡️ Enter choice(s): ").strip()
-    
-    media_map = {
-        '1': 'images', '2': 'videos', '3': 'audio',
-        '4': 'documents', '5': 'archives', '6': 'ebooks'
-    }
-    
-    if '7' in choice:
-        media_types = list(MEDIA_EXTENSIONS.keys())
+    if args.media_type:
+        media_types = [args.media_type]
     else:
-        media_types = [media_map[c.strip()] for c in choice.split(',') if c.strip() in media_map]
+        print("\n🎯 Choose media types (comma separated):")
+        print("1. Images\n2. Videos\n3. Audio\n4. Documents\n5. Archives\n6. eBooks\n7. All")
+        choice = input("➡️ Enter choice(s): ").strip()
+        media_map = {
+            '1': 'images', '2': 'videos', '3': 'audio',
+            '4': 'documents', '5': 'archives', '6': 'ebooks'
+        }
+        if '7' in choice:
+            media_types = list(MEDIA_EXTENSIONS.keys())
+        else:
+            media_types = [media_map[c.strip()] for c in choice.split(',') if c.strip() in media_map]
     
-    # Scraping parameters
     min_size_kb = int(input("\n📏 Min file size in KB (0 for none): ") or 0)
     max_depth = int(input("📚 Max crawl depth (default 2): ") or 2)
     max_pages = int(input("📄 Max pages to crawl (default 100): ") or 100)
     same_domain = input("🌐 Stay in same domain? (y/n, default y): ").lower() != 'n'
     
-    # Proxy configuration
     proxy = input("\n🌐 Proxy URL (optional, e.g., http://user:pass@host:port): ").strip()
     proxy = proxy if proxy else None
     
-    # Cloudflare bypass options
     print("\n🛡️ Cloudflare bypass engine:")
     print("1. Auto (best available)")
     print("2. curl_cffi (TLS impersonation - fastest)")
@@ -1024,14 +1030,12 @@ def main():
     print("4. Standard requests (no bypass)")
     bypass_choice = input("➡️ Select (default 1): ").strip() or "1"
     
-    # External viewer option
     print("\n📱 External viewer:")
     print("1. No - download only")
     print("2. Yes - open each file after download (Android: termux-open)")
     viewer_choice = input("➡️ Select (default 1): ").strip() or "1"
     use_external_viewer = (viewer_choice == "2")
     
-    # Per-type limits
     max_per_type = {}
     for mtype in media_types:
         n = input(f"\n🛡️ Max {mtype} to download (0 = no limit): ")

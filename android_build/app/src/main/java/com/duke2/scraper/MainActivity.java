@@ -6,57 +6,90 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.provider.Settings;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.core.content.FileProvider;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 public class MainActivity extends Activity {
-    
+
     private static final int REQUEST_STORAGE = 100;
+    private EditText etUrl;
+    private Spinner spinnerMediaType;
     private TextView tvStatus;
-    
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
-        // Main layout
+
         ScrollView scrollView = new ScrollView(this);
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(40, 40, 40, 40);
         layout.setBackgroundColor(0xFF0A0A0F);
-        
-        // Title
+
         TextView tvTitle = new TextView(this);
         tvTitle.setText("🕷️ Duke2 Scraper");
         tvTitle.setTextSize(28);
         tvTitle.setTextColor(0xFFE94560);
         tvTitle.setPadding(0, 0, 0, 20);
         layout.addView(tvTitle);
-        
-        // Status
+
         tvStatus = new TextView(this);
         tvStatus.setText("Status: Ready");
         tvStatus.setTextColor(0xFF888888);
-        tvStatus.setPadding(0, 0, 0, 30);
+        tvStatus.setPadding(0, 0, 0, 20);
         layout.addView(tvStatus);
-        
-        // Buttons
-        addButton(layout, "▶️ Start Scraper", v -> startScraper());
+
+        TextView tvUrl = new TextView(this);
+        tvUrl.setText("Target URL");
+        tvUrl.setTextColor(0xFFE0E0E0);
+        layout.addView(tvUrl);
+
+        etUrl = new EditText(this);
+        etUrl.setHint("https://example.com");
+        etUrl.setTextColor(0xFFE0E0E0);
+        etUrl.setHintTextColor(0xFF888888);
+        layout.addView(etUrl);
+
+        TextView tvType = new TextView(this);
+        tvType.setText("Media Type");
+        tvType.setTextColor(0xFFE0E0E0);
+        tvType.setPadding(0, 20, 0, 8);
+        layout.addView(tvType);
+
+        spinnerMediaType = new Spinner(this);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
+                new String[]{"images", "videos", "audio", "documents", "archives", "ebooks", "all"});
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerMediaType.setAdapter(adapter);
+        layout.addView(spinnerMediaType);
+
+        Button btnStart = new Button(this);
+        btnStart.setText("▶️ Start Download");
+        btnStart.setBackgroundColor(0xFFE94560);
+        btnStart.setTextColor(0xFFFFFFFF);
+        btnStart.setPadding(20, 30, 20, 30);
+        btnStart.setOnClickListener(v -> startScraper());
+        layout.addView(btnStart);
+
         addButton(layout, "🖼️ Open Gallery", v -> openGallery());
         addButton(layout, "⚙️ Proxy Settings", v -> showProxySettings());
         addButton(layout, "🛡️ Cloudflare Bypass", v -> showBypassInfo());
         addButton(layout, "📖 Tutorial", v -> showTutorial());
         addButton(layout, "📁 Open Download Folder", v -> openDownloadFolder());
-        
+
         scrollView.addView(layout);
         setContentView(scrollView);
-        
         checkPermissions();
     }
     
@@ -88,15 +121,43 @@ public class MainActivity extends Activity {
     }
     
     private void startScraper() {
-        Toast.makeText(this, "Run in Termux: python Duke2_Enhanced.py", Toast.LENGTH_LONG).show();
-        
-        // Try to launch Termux
+        String url = etUrl.getText().toString().trim();
+        if (url.isEmpty()) {
+            Toast.makeText(this, "Please enter a URL first.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://" + url;
+        }
+
+        String mediaType = spinnerMediaType.getSelectedItem().toString();
+        tvStatus.setText("Preparing download for " + mediaType + "...");
+
+        File targetDir = new File(Environment.getExternalStorageDirectory(), "Download/Duke2");
+        targetDir.mkdirs();
+        File scriptFile = new File(targetDir, "Duke2_Enhanced.py");
+
         try {
+            copyAsset("Duke2_Enhanced.py", scriptFile);
+            Toast.makeText(this, "Starting scraper in Termux...", Toast.LENGTH_LONG).show();
+
             Intent intent = new Intent();
             intent.setClassName("com.termux", "com.termux.app.TermuxActivity");
+            intent.putExtra("com.termux.RUN_COMMAND", "python \"" + scriptFile.getAbsolutePath() + "\" --url \"" + url + "\" --media-type \"" + mediaType + "\"");
             startActivity(intent);
         } catch (Exception e) {
+            tvStatus.setText("Error: " + e.getMessage());
             showTermuxDialog();
+        }
+    }
+
+    private void copyAsset(String assetName, File outFile) throws Exception {
+        try (InputStream in = getAssets().open(assetName); OutputStream out = new FileOutputStream(outFile)) {
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
         }
     }
     
