@@ -202,17 +202,11 @@ public class MainActivity extends Activity {
     private void showProxySettings() {
         new AlertDialog.Builder(this)
             .setTitle("⚙️ Proxy Settings")
-            .setMessage("Configure proxy in Duke2_Enhanced.py:
-
-"
-                + "1. HTTP Proxy: http://host:port
-"
-                + "2. SOCKS5: socks5://user:pass@host:port
-"
-                + "3. Rotating proxy supported
-
-"
-                + "Enter proxy URL when prompted during scraper startup.")
+            .setMessage("Configure proxy in Duke2_Enhanced.py:\n\n" +
+                "1. HTTP Proxy: http://host:port\n" +
+                "2. SOCKS5: socks5://user:pass@host:port\n" +
+                "3. Rotating proxy supported\n\n" +
+                "Enter proxy URL when prompted during scraper startup.")
             .setPositiveButton("OK", null)
             .show();
     }
@@ -220,17 +214,11 @@ public class MainActivity extends Activity {
     private void showBypassInfo() {
         new AlertDialog.Builder(this)
             .setTitle("🛡️ Cloudflare Bypass Engines")
-            .setMessage("Available bypass engines:
-
-"
-                + "1. curl_cffi - TLS fingerprint impersonation (recommended)
-"
-                + "2. cloudscraper - JavaScript challenge solver
-"
-                + "3. Standard requests (limited)
-
-"
-                + "Install: pip install curl-cffi cloudscraper")
+            .setMessage("Available bypass engines:\n\n" +
+                "1. curl_cffi - TLS fingerprint impersonation (recommended)\n" +
+                "2. cloudscraper - JavaScript challenge solver\n" +
+                "3. Standard requests (limited)\n\n" +
+                "Install: pip install curl-cffi cloudscraper")
             .setPositiveButton("OK", null)
             .show();
     }
@@ -238,20 +226,13 @@ public class MainActivity extends Activity {
     private void showTutorial() {
         new AlertDialog.Builder(this)
             .setTitle("📖 Quick Tutorial")
-            .setMessage("1. Install Termux from F-Droid
-"
-                + "2. Run: pkg install python
-"
-                + "3. Run: pip install requests bs4 curl-cffi cloudscraper
-"
-                + "4. Run: python Duke2_Enhanced.py
-"
-                + "5. Enter URL and configure options
-"
-                + "6. View results in gallery.html
-
-"
-                + "For full tutorial, see TUTORIAL.md")
+            .setMessage("1. Install Termux from F-Droid\n" +
+                "2. Run: pkg install python\n" +
+                "3. Run: pip install requests bs4 curl-cffi cloudscraper\n" +
+                "4. Run: python Duke2_Enhanced.py\n" +
+                "5. Enter URL and configure options\n" +
+                "6. View results in gallery.html\n\n" +
+                "For full tutorial, see TUTORIAL.md")
             .setPositiveButton("OK", null)
             .show();
     }
@@ -259,16 +240,11 @@ public class MainActivity extends Activity {
     private void showTermuxDialog() {
         new AlertDialog.Builder(this)
             .setTitle("Termux Required")
-            .setMessage("Duke2 Scraper requires Termux to run.
-
-"
-                + "Install Termux from F-Droid, then:
-"
-                + "1. pkg install python
-"
-                + "2. pip install requests bs4 curl-cffi
-"
-                + "3. python Duke2_Enhanced.py")
+            .setMessage("Duke2 Scraper requires Termux to run.\n\n" +
+                "Install Termux from F-Droid, then:\n" +
+                "1. pkg install python\n" +
+                "2. pip install requests bs4 curl-cffi\n" +
+                "3. python Duke2_Enhanced.py")
             .setPositiveButton("Get Termux", (d, w) -> {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setData(Uri.parse("https://f-droid.org/packages/com.termux/"));
