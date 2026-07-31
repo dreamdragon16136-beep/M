@@ -1,0 +1,8 @@
+R_DEF: Internal format may change without notice
+local
+color black
+color dark_gold
+color gold
+color gray
+string app_name
+style Theme.PixelAgent
